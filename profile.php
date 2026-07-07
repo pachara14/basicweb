@@ -1,13 +1,11 @@
 <?php
+require_once 'connect.php';
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-require_once 'connect.php';
-
-// ตรวจสอบว่าล็อกอินหรือยัง ถ้ายังให้เด้งไปหน้า login
 if (!isset($_SESSION['user_id'])) {
-    header("Location: login.php");
     exit();
 }
 
@@ -23,7 +21,7 @@ $stmt->close();
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = trim($_POST['email']);
-    $profile_image = $user['profile_image']; 
+    $profile_image = $user['profile_image'];
 
     // จัดการอัปโหลดรูปโปรไฟล์ใหม่
     if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
@@ -31,24 +29,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if (!is_dir($target_dir)) {
             mkdir($target_dir, 0777, true);
         }
-        
+
         if (!empty($user['profile_image']) && file_exists($user['profile_image'])) {
             unlink($user['profile_image']);
         }
-        
+
         $file_extension = pathinfo($_FILES["profile_image"]["name"], PATHINFO_EXTENSION);
         $new_filename = "user_" . $user_id . "_" . time() . "." . $file_extension;
         $profile_image = $target_dir . $new_filename;
-        
+
         move_uploaded_file($_FILES["profile_image"]["tmp_name"], $profile_image);
     }
     $update_stmt = $conn->prepare("UPDATE users SET email = ?, profile_image = ? WHERE id = ?");
     $update_stmt->bind_param("ssi", $email, $profile_image, $user_id);
-    
+
     if ($update_stmt->execute()) {
         $message = "อัปเดตโปรไฟล์เรียบร้อยแล้ว!";
         $msg_type = "success";
-        
+
         // ดึงข้อมูลใหม่มาแสดงทันที
         $user['email'] = $email;
         $user['profile_image'] = $profile_image;
@@ -62,11 +60,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <!DOCTYPE html>
 <html lang="th">
+
 <head>
     <meta charset="UTF-8">
     <title>โปรไฟล์ส่วนตัว</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
+
 <body class="bg-light">
 
     <?php include 'navbar.php'; ?>
@@ -83,7 +83,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <?php endif; ?>
 
                 <form action="profile.php" method="POST" enctype="multipart/form-data">
-                    
+
                     <div class="text-center mb-4">
                         <?php if (!empty($user['profile_image'])): ?>
                             <img src="<?= htmlspecialchars($user['profile_image']) ?>" class="rounded-circle border" width="120" height="120" style="object-fit: cover;">
@@ -116,6 +116,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
         </div>
     </div>
-    
+
 </body>
+
 </html>
