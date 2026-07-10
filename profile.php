@@ -5,7 +5,9 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+
 if (!isset($_SESSION['user_id'])) {
+    header("Location: logout.php");
     exit();
 }
 
@@ -18,6 +20,15 @@ $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $user = $stmt->get_result()->fetch_assoc();
 $stmt->close();
+
+// [จุดที่แก้ไข 2] เพิ่มการเช็คว่ามี User คนนี้ในฐานข้อมูลจริงๆ หรือไม่
+// ถ้าไม่มี (เช่น ข้อมูลหาย หรือ Session ค้าง) ให้ล้าง Session แล้วเด้งไปล็อกอินใหม่
+if (!$user) {
+    session_unset();
+    session_destroy();
+    header("Location: logout.php");
+    exit();
+}
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = trim($_POST['email']);
@@ -40,6 +51,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         move_uploaded_file($_FILES["profile_image"]["tmp_name"], $profile_image);
     }
+
     $update_stmt = $conn->prepare("UPDATE users SET email = ?, profile_image = ? WHERE id = ?");
     $update_stmt->bind_param("ssi", $email, $profile_image, $user_id);
 
@@ -67,7 +79,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 
-<body class="bg-light">
+<body class="bg-light d-flex flex-column min-vh-100">
 
     <?php include 'navbar.php'; ?>
 
@@ -89,7 +101,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             <img src="<?= htmlspecialchars($user['profile_image']) ?>" class="rounded-circle border" width="120" height="120" style="object-fit: cover;">
                         <?php else: ?>
                             <div class="rounded-circle bg-secondary text-white d-flex align-items-center justify-content-center mx-auto" style="width: 120px; height: 120px; font-size: 48px; font-weight: bold;">
-                                <?= strtoupper(substr($user['username'], 0, 1)) ?>
+                                <?= strtoupper(substr($user['username'] ?? 'U', 0, 1)) ?>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -101,7 +113,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
                     <div class="mb-3">
                         <label class="form-label">ชื่อผู้ใช้งาน (Username)</label>
-                        <input type="text" class="form-control bg-light" value="<?= htmlspecialchars($user['username']) ?>" readonly>
+                        <input type="text" class="form-control bg-light" value="<?= htmlspecialchars($user['username'] ?? '') ?>" readonly>
                         <small class="text-muted">ชื่อผู้ใช้งานไม่สามารถเปลี่ยนแปลงได้</small>
                     </div>
 
@@ -116,7 +128,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </div>
         </div>
     </div>
+        </div> <?php include 'footer.php'; ?>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>

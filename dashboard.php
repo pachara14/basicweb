@@ -1,7 +1,22 @@
 <?php
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
 include 'connect.php';
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+if (!isset($_SESSION['user_id'])) {
+    header("Location: logout.php");
+    exit();
+}
+
+$user_id = $_SESSION['user_id'];    
 $sql = "SELECT * FROM products ORDER BY created_at DESC";
-$result = $conn->query($sql);
+$product_result = $conn->query($sql);
+
+
+
 ?>
 
 <!DOCTYPE html>
@@ -11,9 +26,10 @@ $result = $conn->query($sql);
     <meta charset="UTF-8">
     <title>Dashboard สินค้า</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
 </head>
 
-<body class="bg-light">
+<body class="bg-light d-flex flex-column min-vh-100">
     <?php include 'navbar.php'; ?>
     <div class="container mt-5">
         <div class="d-flex justify-content-between align-items-center mb-4">
@@ -32,8 +48,8 @@ $result = $conn->query($sql);
                 </tr>
             </thead>
             <tbody>
-                <?php if ($result && $result->num_rows > 0): ?>
-                    <?php while ($row = $result->fetch_assoc()): ?>
+                <?php if ($product_result && $product_result->num_rows > 0): ?>
+                    <?php while ($row = $product_result->fetch_assoc()): ?>
                         <tr>
                             <td><?= $row['id'] ?></td>
                             <td>
@@ -59,7 +75,8 @@ $result = $conn->query($sql);
             </tbody>
         </table>
     </div>
-    
+    </div> <?php include 'footer.php'; ?>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 </html>
